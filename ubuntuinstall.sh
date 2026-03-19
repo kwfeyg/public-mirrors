@@ -304,14 +304,16 @@ append_file_to_cpio() {
     local archive_file=$1
     local source_file=$2
     local source_name
+    local archive_path
     source_name=$(basename "$source_file")
+    archive_path=$(realpath "$archive_file" 2> /dev/null || readlink -f "$archive_file" 2> /dev/null || printf '%s/%s' "$(pwd)" "$archive_file")
 
     local tmpdir
     tmpdir=$(mktemp -d)
     cp "$source_file" "$tmpdir/$source_name"
     (
         cd "$tmpdir"
-        printf '%s\n' "$source_name" | cpio -o -H newc -A -F "$archive_file" > /dev/null
+        printf '%s\n' "$source_name" | cpio -o -H newc -A -F "$archive_path" > /dev/null
     )
     rm -rf "$tmpdir"
 }
