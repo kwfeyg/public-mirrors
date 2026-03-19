@@ -206,6 +206,10 @@ EOF
 
 create_workdir() {
     installer_directory="/boot/ubuntu-${ubuntu_series}"
+    cached_iso="/tmp/ubuntu-${ubuntu_series}-installer.iso"
+    if [ -f "$installer_directory/installer.iso" ] && [ ! -f "$cached_iso" ]; then
+        cp "$installer_directory/installer.iso" "$cached_iso"
+    fi
     rm -rf "$installer_directory"
     mkdir -p "$installer_directory"
     cd "$installer_directory"
@@ -371,6 +375,9 @@ EOF
 
 prepare_live_installer() {
     ensure_iso_extractor
+    if [ -n "${cached_iso:-}" ] && [ -f "$cached_iso" ] && [ ! -f installer.iso ]; then
+        cp "$cached_iso" installer.iso
+    fi
     if [ -f installer.iso ] && [ -s installer.iso ]; then
         printf "\n\033[1;36mReutilizando a ISO já baixada do Ubuntu %s...\033[0m\n" "$ubuntu_version"
     else
