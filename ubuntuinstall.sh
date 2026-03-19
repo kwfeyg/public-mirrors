@@ -143,9 +143,22 @@ mk_hash() {
 
 ensure_grub_tools() {
     if command_exists update-grub || command_exists grub-mkconfig || command_exists grub2-mkconfig; then
-        return
+        :
+    else
+        err 'Não foi possível encontrar update-grub, grub-mkconfig ou grub2-mkconfig'
     fi
-    err 'Não foi possível encontrar update-grub, grub-mkconfig ou grub2-mkconfig'
+
+    if command_exists grub-reboot || command_exists grub2-reboot; then
+        :
+    else
+        err 'Não foi possível encontrar grub-reboot ou grub2-reboot; o instalador Ubuntu só pode continuar com boot único garantido'
+    fi
+
+    if command_exists grub-editenv || command_exists grub2-editenv; then
+        :
+    else
+        err 'Não foi possível encontrar grub-editenv ou grub2-editenv; o instalador Ubuntu só pode continuar com verificação de boot único'
+    fi
 }
 
 setup_grub_defaults() {
@@ -167,6 +180,9 @@ run_grub_update() {
         grub_cfg=/boot/grub/grub.cfg
         grub-mkconfig -o "$grub_cfg"
     fi
+
+    grep -q "menuentry 'Ubuntu Installer' --id osinstall-ubuntu" "$grub_cfg" ||
+        err "A entrada 'osinstall-ubuntu' não foi gravada corretamente no GRUB"
 }
 
 write_custom_grub_entry() {
@@ -204,15 +220,19 @@ menuentry 'Ubuntu Installer' --id osinstall-ubuntu {
 set_one_time_boot() {
     if command_exists grub-reboot; then
         grub-reboot osinstall-ubuntu
-        return
-    fi
-
-    if command_exists grub2-reboot; then
+    elif command_exists grub2-reboot; then
         grub2-reboot osinstall-ubuntu
-        return
+    else
+        err 'Não foi possível configurar o boot único do instalador Ubuntu'
     fi
 
-    warn 'grub-reboot não encontrado; usando GRUB_DEFAULT temporário pode não ser suportado nesta VPS'
+    if command_exists grub-editenv; then
+        grub-editenv list 2> /dev/null | grep -q '^next_entry=osinstall-ubuntu$' ||
+            err 'O GRUB não confirmou o boot único para o instalador Ubuntu'
+    elif command_exists grub2-editenv; then
+        grub2-editenv list 2> /dev/null | grep -q '^next_entry=osinstall-ubuntu$' ||
+            err 'O GRUB não confirmou o boot único para o instalador Ubuntu'
+    fi
 }
 EOF
     chmod +x /etc/grub.d/09_osinstall_ubuntu
