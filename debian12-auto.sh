@@ -132,16 +132,15 @@ ok "Instalador baixado com sucesso."
 
 export TERM=xterm
 export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_INSTALL_VERSION="$DEBIAN_VERSION"
+export DEBIAN_INSTALL_PASSWORD="$ROOT_PASSWORD"
+export DEBIAN_INSTALL_CONFIRM="1"
 
-RUN_CMD=(
-  bash "$BASE_SCRIPT"
-  --timezone "$INSTALL_TIMEZONE"
-)
+RUN_CMD=( bash "$BASE_SCRIPT" --timezone "$INSTALL_TIMEZONE" )
 
 printf "\n"
 info "Iniciando execução automática do instalador..."
 warn "Ao final, a confirmação de reboot será enviada automaticamente."
 printf "\n"
 
-AUTO_INPUT="$(printf '%s\n%s\n\n' "$DEBIAN_VERSION" "$ROOT_PASSWORD")"
-printf '%s' "$AUTO_INPUT" | "${RUN_CMD[@]}"
+"${RUN_CMD[@]}"
