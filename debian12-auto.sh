@@ -144,9 +144,4 @@ warn "Ao final, a confirmação de reboot será enviada automaticamente."
 printf "\n"
 
 AUTO_INPUT="$(printf '%s\n%s\n\n' "$DEBIAN_VERSION" "$ROOT_PASSWORD")"
-
-if command -v script >/dev/null 2>&1; then
-  printf '%s' "$AUTO_INPUT" | script -q -c "$(printf '%q ' "${RUN_CMD[@]}")" /dev/null
-else
-  printf '%s' "$AUTO_INPUT" | "${RUN_CMD[@]}"
-fi
+printf '%s' "$AUTO_INPUT" | "${RUN_CMD[@]}"
