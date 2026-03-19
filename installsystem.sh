@@ -55,20 +55,20 @@ run_ubuntu_installer() {
     bash "$tmp_script"
 }
 
-show_windows_status() {
-    printf "\n\033[1;31mWindows ainda não está liberado nesta versão.\033[0m\n"
-    printf "\033[0;37mEu não vou deixar uma reinstalação Windows aparecendo como pronta\033[0m\n"
-    printf "\033[0;37msem homologar WinPE, drivers, unattend e pós-boot remoto.\033[0m\n"
-    pause_return
+run_windows_installer() {
+    export TERM=xterm
+    local tmp_script=/tmp/windowsinstall.sh
+    printf "\n\033[1;36mBaixando o instalador Windows...\033[0m\n"
+    download "$RAW_BASE_URL/windowsinstall.sh" "$tmp_script"
+    chmod +x "$tmp_script"
+    bash "$tmp_script"
 }
 
 while true; do
     banner
     printf "\033[1;32m  [1]\033[0m Debian\n"
     printf "\033[1;32m  [2]\033[0m Ubuntu\n"
-    printf "\033[1;32m  [3]\033[0m Windows Server 2019 \033[0;37m(em preparação)\033[0m\n"
-    printf "\033[1;32m  [4]\033[0m Windows Server 2022 \033[0;37m(em preparação)\033[0m\n"
-    printf "\033[1;32m  [5]\033[0m Windows Server 2025 \033[0;37m(em preparação)\033[0m\n"
+    printf "\033[1;32m  [3]\033[0m Windows Server\n"
     printf "\033[1;32m  [0]\033[0m Sair\n\n"
     printf "\033[1;33mEscolha o sistema: \033[0m"
     read -r choice
@@ -80,8 +80,8 @@ while true; do
         2)
             run_ubuntu_installer
             ;;
-        3|4|5)
-            show_windows_status
+        3)
+            run_windows_installer
             ;;
         0)
             exit 0
