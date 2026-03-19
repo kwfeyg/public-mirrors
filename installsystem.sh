@@ -105,7 +105,7 @@ apply_lock_if_supported() {
 
     printf "\n\033[1;33mAviso:\033[0m o bloqueio imutável com chattr não é suportado nesta VPS.\n"
     if [ -n "${DNS_LOCK_ERROR:-}" ]; then
-        printf "\033[0;37mDetalhe: %s\033[0m\n" "$DNS_LOCK_ERROR"
+        printf "\033[0;37mDetalhe: %s\033[0m\n\n" "$DNS_LOCK_ERROR"
     fi
     printf "\033[0;37mO DNS continuará persistente via systemd no boot, mas sem trava imutável no /etc/resolv.conf.\033[0m\n"
     return 1
