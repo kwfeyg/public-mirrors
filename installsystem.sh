@@ -3,6 +3,7 @@
 set -eu
 
 RAW_BASE_URL="https://raw.githubusercontent.com/kwfeyg/public-mirrors/main"
+LOCAL_BASE_DIR="/opt/system-installer"
 DNS_SCRIPT_PATH="/usr/local/sbin/fix-dns.sh"
 DNS_SERVICE_PATH="/etc/systemd/system/fix-dns.service"
 DNS_RESOLV_PATH="/etc/resolv.conf"
@@ -24,6 +25,29 @@ download() {
     else
         err 'Não foi possível encontrar wget ou curl'
     fi
+}
+
+resolve_script_path() {
+    local script_name=$1
+    if [ -x "$LOCAL_BASE_DIR/$script_name" ]; then
+        printf '%s\n' "$LOCAL_BASE_DIR/$script_name"
+        return 0
+    fi
+    printf '%s/%s\n' "$RAW_BASE_URL" "$script_name"
+}
+
+prepare_runner_script() {
+    local script_name=$1
+    local target_path=$2
+    local resolved
+    resolved=$(resolve_script_path "$script_name")
+
+    if [ -x "$resolved" ]; then
+        cp "$resolved" "$target_path"
+    else
+        download "$resolved" "$target_path"
+    fi
+    chmod +x "$target_path"
 }
 
 require_root() {
@@ -195,8 +219,7 @@ run_debian_installer() {
     export TERM=xterm
     local tmp_script=/tmp/debianinstall.sh
     printf "\n\033[1;36mBaixando o instalador Debian original...\033[0m\n"
-    download "$RAW_BASE_URL/debianinstall-original.sh" "$tmp_script"
-    chmod +x "$tmp_script"
+    prepare_runner_script "debianinstall-original.sh" "$tmp_script"
     bash "$tmp_script"
 }
 
@@ -204,8 +227,7 @@ run_ubuntu_installer() {
     export TERM=xterm
     local tmp_script=/tmp/ubuntuinstall.sh
     printf "\n\033[1;36mBaixando o instalador Ubuntu...\033[0m\n"
-    download "$RAW_BASE_URL/ubuntuinstall.sh" "$tmp_script"
-    chmod +x "$tmp_script"
+    prepare_runner_script "ubuntuinstall.sh" "$tmp_script"
     bash "$tmp_script"
 }
 
@@ -213,8 +235,7 @@ run_windows_installer() {
     export TERM=xterm
     local tmp_script=/tmp/windowsinstall.sh
     printf "\n\033[1;36mBaixando o instalador Windows...\033[0m\n"
-    download "$RAW_BASE_URL/windowsinstall.sh" "$tmp_script"
-    chmod +x "$tmp_script"
+    prepare_runner_script "windowsinstall.sh" "$tmp_script"
     bash "$tmp_script"
 }
 
