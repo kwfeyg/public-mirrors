@@ -371,8 +371,12 @@ EOF
 
 prepare_live_installer() {
     ensure_iso_extractor
-    printf "\n\033[1;36mBaixando a ISO oficial do Ubuntu %s...\033[0m\n" "$ubuntu_version"
-    download "$iso_url" installer.iso
+    if [ -f installer.iso ] && [ -s installer.iso ]; then
+        printf "\n\033[1;36mReutilizando a ISO já baixada do Ubuntu %s...\033[0m\n" "$ubuntu_version"
+    else
+        printf "\n\033[1;36mBaixando a ISO oficial do Ubuntu %s...\033[0m\n" "$ubuntu_version"
+        download "$iso_url" installer.iso
+    fi
 
     printf "\n\033[1;36mExtraindo kernel e initrd da ISO...\033[0m\n"
     extract_from_iso installer.iso /casper/vmlinuz linux
