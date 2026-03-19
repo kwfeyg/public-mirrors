@@ -230,6 +230,28 @@ ensure_iso_extractor() {
     err 'Não foi possível encontrar ou instalar uma ferramenta para extrair arquivos de ISO (xorriso, bsdtar ou 7z)'
 }
 
+ensure_initrd_tools() {
+    local missing_packages=
+
+    command_exists cpio || missing_packages="${missing_packages} cpio"
+    command_exists gzip || missing_packages="${missing_packages} gzip"
+    command_exists xz || missing_packages="${missing_packages} xz-utils"
+
+    if [ -n "$missing_packages" ]; then
+        if command_exists apt-get; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y $missing_packages
+        else
+            err "Ferramentas ausentes para manipular o initrd:${missing_packages}"
+        fi
+    fi
+
+    command_exists cpio || err 'O utilitário cpio é obrigatório para continuar'
+    command_exists gzip || err 'O utilitário gzip é obrigatório para continuar'
+    command_exists xz || err 'O utilitário xz é obrigatório para continuar'
+}
+
 extract_from_iso() {
     local iso_file=$1
     local source_path=$2
@@ -289,7 +311,7 @@ append_file_to_cpio() {
     cp "$source_file" "$tmpdir/$source_name"
     (
         cd "$tmpdir"
-        printf '%s\n' "$source_name" | cpio -o -H newc -A -F "$archive_file" > /dev/null 2>&1
+        printf '%s\n' "$source_name" | cpio -o -H newc -A -F "$archive_file" > /dev/null
     )
     rm -rf "$tmpdir"
 }
@@ -338,6 +360,7 @@ EOF
 }
 
 prepare_legacy_installer() {
+    ensure_initrd_tools
     printf "\n\033[1;36mBaixando o Ubuntu 18.04 legacy netboot...\033[0m\n"
     download "$linux_url" linux
     download "$initrd_url" initrd.gz
@@ -375,6 +398,7 @@ EOF
 
 prepare_live_installer() {
     ensure_iso_extractor
+    ensure_initrd_tools
     if [ -n "${cached_iso:-}" ] && [ -f "$cached_iso" ] && [ ! -f installer.iso ]; then
         cp "$cached_iso" installer.iso
     fi
