@@ -82,6 +82,35 @@ ensure_dns_dependencies() {
     command_exists lsattr || err 'lsattr não encontrado'
 }
 
+can_lock_resolv_conf() {
+    local output_file
+    output_file=$(mktemp)
+    if chattr +i "$DNS_RESOLV_PATH" > /dev/null 2>"$output_file"; then
+        chattr -i "$DNS_RESOLV_PATH" > /dev/null 2>&1 || true
+        rm -f "$output_file"
+        return 0
+    fi
+    DNS_LOCK_ERROR=$(cat "$output_file" 2> /dev/null || true)
+    rm -f "$output_file"
+    return 1
+}
+
+apply_lock_if_supported() {
+    DNS_LOCK_ERROR=
+    if can_lock_resolv_conf; then
+        chattr +i "$DNS_RESOLV_PATH"
+        printf "\n\033[1;32mArquivo travado com chattr +i.\033[0m\n"
+        return 0
+    fi
+
+    printf "\n\033[1;33mAviso:\033[0m o bloqueio imutável com chattr não é suportado nesta VPS.\n"
+    if [ -n "${DNS_LOCK_ERROR:-}" ]; then
+        printf "\033[0;37mDetalhe: %s\033[0m\n" "$DNS_LOCK_ERROR"
+    fi
+    printf "\033[0;37mO DNS continuará persistente via systemd no boot, mas sem trava imutável no /etc/resolv.conf.\033[0m\n"
+    return 1
+}
+
 write_dns_script() {
     mkdir -p /usr/local/sbin /etc/systemd/system
     cat > "$DNS_SCRIPT_PATH" <<'EOF_SCRIPT'
@@ -136,7 +165,7 @@ apply_persistent_dns() {
     systemctl daemon-reload
     systemctl enable --now fix-dns.service
     "$DNS_SCRIPT_PATH"
-    chattr +i "$DNS_RESOLV_PATH"
+    apply_lock_if_supported || true
     printf "\n\033[1;32mDNS persistente aplicado com sucesso.\033[0m\n\n"
     cat "$DNS_RESOLV_PATH"
     pause_return
@@ -170,8 +199,7 @@ lock_dns_file() {
     require_root
     ensure_dns_dependencies
     [ -e "$DNS_RESOLV_PATH" ] || err 'O arquivo /etc/resolv.conf não existe'
-    chattr +i "$DNS_RESOLV_PATH"
-    printf "\n\033[1;32mArquivo travado: %s\033[0m\n" "$DNS_RESOLV_PATH"
+    apply_lock_if_supported || true
     pause_return
 }
 
@@ -181,7 +209,7 @@ run_dns_script_now() {
     unlock_resolv_if_needed
     "$DNS_SCRIPT_PATH"
     if [ -e "$DNS_RESOLV_PATH" ]; then
-        chattr +i "$DNS_RESOLV_PATH" || true
+        apply_lock_if_supported || true
     fi
     printf "\n\033[1;32mScript executado com sucesso.\033[0m\n\n"
     cat "$DNS_RESOLV_PATH"
