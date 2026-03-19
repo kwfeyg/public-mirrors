@@ -151,7 +151,7 @@ ensure_grub_tools() {
 setup_grub_defaults() {
     mkdir -p /etc/default/grub.d
     cat > /etc/default/grub.d/zz-osinstall.cfg <<EOF
-GRUB_DEFAULT=osinstall-ubuntu
+GRUB_DEFAULT=saved
 GRUB_TIMEOUT=5
 EOF
 }
@@ -180,7 +180,7 @@ write_custom_grub_entry() {
             initrd_line="initrd ${rel_dir}/initrd.gz"
             ;;
         live)
-            kernel_line="linux ${rel_dir}/linux iso-url=${iso_url} autoinstall subiquity.autoinstallpath=autoinstall.yaml ip=dhcp ---"
+            kernel_line="linux ${rel_dir}/linux root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=${iso_url} cloud-config-url=/dev/null autoinstall subiquity.autoinstallpath=autoinstall.yaml ---"
             initrd_line="initrd ${rel_dir}/initrd"
             ;;
         *)
@@ -199,6 +199,20 @@ menuentry 'Ubuntu Installer' --id osinstall-ubuntu {
     insmod btrfs
     ${kernel_line}
     ${initrd_line}
+}
+
+set_one_time_boot() {
+    if command_exists grub-reboot; then
+        grub-reboot osinstall-ubuntu
+        return
+    fi
+
+    if command_exists grub2-reboot; then
+        grub2-reboot osinstall-ubuntu
+        return
+    fi
+
+    warn 'grub-reboot não encontrado; usando GRUB_DEFAULT temporário pode não ser suportado nesta VPS'
 }
 EOF
     chmod +x /etc/grub.d/09_osinstall_ubuntu
@@ -459,6 +473,7 @@ main() {
     setup_grub_defaults
     write_custom_grub_entry
     run_grub_update
+    set_one_time_boot
     final_message_and_reboot
 }
 
