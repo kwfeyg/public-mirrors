@@ -60,7 +60,8 @@ banner() {
     printf "\033[1;37m%25s%s%-14s\033[0m\n" "UNIFIED OS INSTALLER"
     printf "\033[1;34m═══════════════════════════════════════════════════════\033[0m\n"
     printf "\033[0;37mReinstalação completa do sistema com seleção central.\033[0m\n"
-    printf "\033[0;37mDebian usa o instalador original. Ubuntu usa o fluxo oficial dedicado.\033[0m\n\n"
+    printf "\033[0;37mDebian usa o instalador original. Área DNS já está homologada.\033[0m\n"
+    printf "\033[1;33mUbuntu permanece em revisão e está temporariamente desativado neste menu.\033[0m\n\n"
 }
 
 pause_return() {
@@ -251,12 +252,11 @@ run_debian_installer() {
     bash "$tmp_script"
 }
 
-run_ubuntu_installer() {
-    export TERM=xterm
-    local tmp_script=/tmp/ubuntuinstall.sh
-    printf "\n\033[1;36mBaixando o instalador Ubuntu...\033[0m\n"
-    prepare_runner_script "ubuntuinstall.sh" "$tmp_script"
-    bash "$tmp_script"
+show_ubuntu_disabled_notice() {
+    printf "\n\033[1;33mUbuntu temporariamente desativado neste menu.\033[0m\n"
+    printf "\033[0;37mMotivo: o módulo ainda não está homologado com segurança para reinstalação completa em VPS.\033[0m\n"
+    printf "\033[0;37mEle será liberado novamente só depois de uma revisão completa do fluxo de boot e pós-instalação.\033[0m\n"
+    pause_return
 }
 
 run_windows_installer() {
@@ -270,7 +270,7 @@ run_windows_installer() {
 while true; do
     banner
     printf "\033[1;32m  [1]\033[0m Debian\n"
-    printf "\033[1;32m  [2]\033[0m Ubuntu\n"
+    printf "\033[1;33m  [2]\033[0m Ubuntu \033[0;37m(temporariamente desativado)\033[0m\n"
     printf "\033[1;32m  [3]\033[0m Windows Server\n"
     printf "\033[1;32m  [4]\033[0m Área DNS\n"
     printf "\033[1;32m  [0]\033[0m Sair\n\n"
@@ -282,7 +282,7 @@ while true; do
             run_debian_installer
             ;;
         2)
-            run_ubuntu_installer
+            show_ubuntu_disabled_notice
             ;;
         3)
             run_windows_installer
