@@ -45,6 +45,7 @@ configure_sshd() {
 # Função para solicitar a senha e escolher a versão do Debian
 prompt_password() {
     local prompt=
+    local auto_password=${DEBIAN_INSTALL_PASSWORD:-${AUTO_ROOT_PASSWORD:-}}
 
     if [ $# -gt 0 ]; then
         prompt=$1
@@ -61,6 +62,14 @@ prompt_password() {
         echo -e "\033[1;31m═══════════════════════════════════════════════\033[0m"
         prompt="Senha do usuário $username: "
     fi
+
+if [ -n "$auto_password" ]; then
+    if [ "${#auto_password}" -lt 8 ]; then
+        err "Senha automática deve ter pelo menos 8 caracteres"
+    fi
+    password=$auto_password
+    return
+fi
 
 while true; do
     echo -ne "\n\033[1;33m$prompt\033[0m" # Prompt em amarelo
@@ -204,9 +213,10 @@ has_backports() {
     return 1
 }
 # Inicialização da variável com a versão recomendada
-debian_version=11
+debian_version=${DEBIAN_INSTALL_VERSION:-${AUTO_DEBIAN_VERSION:-11}}
 
 # Loop para selecionar a versão do Debian
+if [ -z "${DEBIAN_INSTALL_VERSION:-}" ] && [ -z "${AUTO_DEBIAN_VERSION:-}" ]; then
 while true; do
     clear
     echo -e "\033[1;31m═══════════════════════════════════════════════\033[0m"
@@ -227,6 +237,7 @@ while true; do
         err "Versão não suportada: $debian_version"
     fi
 done
+fi
 interface=auto
 ip=
 netmask=
@@ -1004,7 +1015,9 @@ echo -e "\033[33mO servidor será reiniciado.\033[0m"
 echo -e "\033[33mPor favor, aguarde alguns minutos antes\nde tentar se reconectar ao SSH.\033[0m"
 echo -e "\033[33mAgradecemos sua compreensão e paciência.\033[0m"
 echo ""
-echo -ne "\033[31mEnter continuar ou CTRL+C cancelar: \033[0m"; read -r enter
+if [ -z "${DEBIAN_INSTALL_CONFIRM:-}" ] && [ -z "${AUTO_INSTALL_CONFIRM:-}" ]; then
+    echo -ne "\033[31mEnter continuar ou CTRL+C cancelar: \033[0m"; read -r enter
+fi
 
 # Verificar se o script está sendo executado como root
 if [ "$(whoami)" != "root" ]; then 
