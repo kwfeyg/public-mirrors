@@ -216,6 +216,9 @@ menuentry 'Ubuntu Installer' --id osinstall-ubuntu {
     ${kernel_line}
     ${initrd_line}
 }
+EOF
+    chmod +x /etc/grub.d/09_osinstall_ubuntu
+}
 
 set_one_time_boot() {
     if command_exists grub-reboot; then
@@ -233,9 +236,6 @@ set_one_time_boot() {
         grub2-editenv list 2> /dev/null | grep -q '^next_entry=osinstall-ubuntu$' ||
             err 'O GRUB não confirmou o boot único para o instalador Ubuntu'
     fi
-}
-EOF
-    chmod +x /etc/grub.d/09_osinstall_ubuntu
 }
 
 create_workdir() {
