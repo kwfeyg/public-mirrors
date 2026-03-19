@@ -245,31 +245,33 @@ extract_from_iso() {
 convert_initrd_to_plain_cpio() {
     local source=$1
     local target=$2
-    local file_type
-    file_type=$(file -b "$source")
 
-    case "$file_type" in
-        *"cpio archive"*)
-            cp "$source" "$target"
-            ;;
-        *"gzip compressed"*)
-            gzip -dc "$source" > "$target"
-            ;;
-        *"XZ compressed"*)
-            xz -dc "$source" > "$target"
-            ;;
-        *"Zstandard compressed"*)
-            command_exists zstd || err 'O initrd está em zstd e o sistema não possui zstd'
-            zstd -dc "$source" > "$target"
-            ;;
-        *"LZ4 compressed"*)
-            command_exists lz4 || err 'O initrd está em lz4 e o sistema não possui lz4'
-            lz4 -dc "$source" > "$target"
-            ;;
-        *)
-            err "Formato do initrd não reconhecido: $file_type"
-            ;;
-    esac
+    if cpio -it < "$source" > /dev/null 2>&1; then
+        cp "$source" "$target"
+        return
+    fi
+
+    if gzip -t "$source" > /dev/null 2>&1; then
+        gzip -dc "$source" > "$target"
+        return
+    fi
+
+    if xz -t "$source" > /dev/null 2>&1; then
+        xz -dc "$source" > "$target"
+        return
+    fi
+
+    if command_exists zstd && zstd -tq "$source" > /dev/null 2>&1; then
+        zstd -dc "$source" > "$target"
+        return
+    fi
+
+    if command_exists lz4 && lz4 -t "$source" > /dev/null 2>&1; then
+        lz4 -dc "$source" > "$target"
+        return
+    fi
+
+    err 'Formato do initrd não reconhecido ou utilitário de descompressão ausente'
 }
 
 append_file_to_cpio() {
